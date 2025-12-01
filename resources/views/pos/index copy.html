@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Sample</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        @media (max-width: 640px) {
+            .cart {
+                width: 100%;
+                position: relative;
+            }
+            .product-view {
+                width: 100%;
+                margin-left: 0;
+            }
+        }
+    </style>
+    <script>
+        function addToCart(product) {
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            let total = 0;
+
+            // Create a row for the cart item
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="py-2 px-4 border-b">${product.name}</td>
+                <td class="py-2 px-4 border-b">${product.barcode}</td>
+                <td class="py-2 px-4 border-b">1</td>
+                <td class="py-2 px-4 border-b">$${product.sale.toFixed(2)}</td>
+                <td class="py-2 px-4 border-b">1</td>
+                <td class="py-2 px-4 border-b">$${product.sale.toFixed(2)}</td>
+                <td class="py-2 px-4 border-b">
+                    <button class="text-red-500" onclick="removeFromCart(this)">Remove</button>
+                </td>
+            `;
+            cartItems.appendChild(row);
+            total += product.sale;
+            cartTotal.innerText = `Total: $${total.toFixed(2)}`;
+        }
+
+        function removeFromCart(button) {
+            const row = button.closest('tr');
+            const price = parseFloat(row.children[5].innerText.replace('$', ''));
+            const cartTotal = document.getElementById('cart-total');
+            let total = parseFloat(cartTotal.innerText.replace('Total: $', '')) - price;
+
+            row.remove();
+            cartTotal.innerText = `Total: $${total.toFixed(2)}`;
+        }
+
+        function checkout(method) {
+            alert(`Proceeding to checkout with ${method}`);
+        }
+
+        document.getElementById('clear-cart-btn').addEventListener('click', () => {
+            document.getElementById('cart-items').innerHTML = '';
+            document.getElementById('cart-total').innerText = 'Total: $0.00';
+        });
+    </script>
+</head>
+<body class="bg-gray-100">
+
+<div class="flex h-screen">
+    <!-- Cart Section -->
+    <div class="cart bg-white shadow-lg p-6 w-2/5">
+        <h2 class="text-2xl font-bold mb-4">Cart</h2>
+        <div class="overflow-auto flex-grow">
+            <table id="cart-table" class="min-w-full bg-white border border-gray-300">
+                <thead>
+                    <tr>
+                        <th class="py-2 px-4 border-b">Product</th>
+                        <th class="py-2 px-4 border-b">Unit</th>
+                        <th class="py-2 px-4 border-b">Unit Qty</th>
+                        <th class="py-2 px-4 border-b">Price</th>
+                        <th class="py-2 px-4 border-b">Qty</th>
+                        <th class="py-2 px-4 border-b">Total</th>
+                        <th class="py-2 px-4 border-b">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="cart-items">
+                    <!-- Cart items will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+        <p class="text-lg mt-4" id="cart-total">Total: $0.00</p>
+        <div class="flex space-x-2 mt-4">
+            <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="checkout('cash')">Cash</button>
+            <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="checkout('pos')">POS</button>
+            <button class="bg-yellow-500 text-white px-4 py-2 rounded" onclick="checkout('bank')">Bank Transfer</button>
+            <button id="clear-cart-btn" class="bg-blue-500 text-white px-4 py-2 rounded" aria-label="Clear Cart">Clear Cart</button>
+        </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="product-view bg-gray-200 p-6 w-3/5">
+        <div class="flex mb-2">
+            <div class="flex-grow">
+                <div class="relative">
+                    <input type="text" id="search-bar" class="border border-gray-300 rounded w-full pl-10 pr-4 py-2" placeholder="Search.... ">
+                    <div class="absolute left-2 top-1/2 transform -translate-y-1/2">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="product-list">
+            <!-- Example product items -->
+            <div class="bg-white shadow rounded-lg p-4 cursor-pointer" 
+                 data-product-id="1" 
+                 data-product-name="Product 1" 
+                 data-product-barcode="123456789" 
+                 data-product-price="10.00" 
+                 onclick="addToCart({ id: 1, name: 'Product 1', barcode: '123456789', sale: 10.00 })">
+                <h6 class="font-semibold">Product 1</h6>
+                <h6 class="text-sm text-gray-600">123456789</h6>
+                <p class="text-lg mt-1">Sale: $10.00</p>
+                <p class="text-sm mt-1">Qty: 10</p>
+            </div>
+            <div class="bg-white shadow rounded-lg p-4 cursor-pointer" 
+                 data-product-id="2" 
+                 data-product-name="Product 2" 
+                 data-product-barcode="987654321" 
+                 data-product-price="15.00" 
+                 onclick="addToCart({ id: 2, name: 'Product 2', barcode: '987654321', sale: 15.00 })">
+                <h6 class="font-semibold">Product 2</h6>
+                <h6 class="text-sm text-gray-600">987654321</h6>
+                <p class="text-lg mt-1">Sale: $15.00</p>
+                <p class="text-sm mt-1">Qty: 5</p>
+            </div>
+            <!-- Add more product items as needed -->
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

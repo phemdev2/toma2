@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "name": "Coca-Cola",
+    "barcode": "123456",
+    "sale": 150,
+    "unit": "bottle",
+    "variants": [
+      {
+        "unit_type": "small",
+        "price": 100,
+        "unit_qty": 1
+      },
+      {
+        "unit_type": "large",
+        "price": 200,
+        "unit_qty": 2
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Pepsi",
+    "barcode": "789012",
+    "sale": 140,
+    "unit": "can",
+    "variants": []
+  },
+  {
+    "id": 3,
+    "name": "Sprite",
+    "barcode": "345678",
+    "sale": 130,
+    "unit": "bottle",
+    "variants": []
+  }
+]

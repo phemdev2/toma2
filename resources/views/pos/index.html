@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #invoiceTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #invoiceTable th, #invoiceTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        #invoiceTable th {
+            background-color: #f2f2f2;
+        }
+
+        #invoiceDetails p {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <h1>Invoice Generator</h1>
+        <form id="invoiceForm">
+            <div class="form-group">
+                <label for="clientName">Store:</label>
+                <input type="text" id="clientName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="itemName">Product:</label>
+                <input type="text" id="itemName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="quantity">Quantity:</label>
+                <input type="number" id="quantity" required>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Price per Item:</label>
+                <input type="number" id="price" required>
+            </div>
+
+            <button type="submit">Add Item</button>
+        </form>
+
+        <h2>Invoice</h2>
+        <div id="invoiceDetails">
+            <p><strong>Client:</strong> <span id="clientNameDisplay"></span></p>
+            <table id="invoiceTable">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Items will be added here dynamically -->
+                </tbody>
+            </table>
+            <p><strong>Total Amount:</strong> $<span id="totalAmount">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Get form values
+            const clientName = document.getElementById('store').value;
+            const itemName = document.getElementById('itemName').value;
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const price = parseFloat(document.getElementById('price').value);
+
+            // Validate inputs
+            if (!clientName || !itemName || isNaN(quantity) || isNaN(price)) {
+                alert('Please fill in all fields correctly.');
+                return;
+            }
+
+            // Update client name on the invoice
+            document.getElementById('clientNameDisplay').textContent = clientName;
+
+            // Calculate item total and append to the table
+            const total = quantity * price;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${itemName}</td>
+                <td>${quantity}</td>
+                <td>$${price.toFixed(2)}</td>
+                <td>$${total.toFixed(2)}</td>
+            `;
+            document.querySelector('#invoiceTable tbody').appendChild(row);
+
+            // Update total amount
+            updateTotalAmount();
+        });
+
+        function updateTotalAmount() {
+            const rows = document.querySelectorAll('#invoiceTable tbody tr');
+            let grandTotal = 0;
+            
+            rows.forEach(row => {
+                const totalCell = row.cells[3];
+                grandTotal += parseFloat(totalCell.textContent.replace('$', ''));
+            });
+
+            document.getElementById('totalAmount').textContent = grandTotal.toFixed(2);
+        }
+    </script>
+</body>
+</html>

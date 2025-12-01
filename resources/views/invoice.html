@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Printzion Invoice Generator</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .invoice {
+      background: #fff;
+      width: 800px;
+      margin: 30px auto;
+      padding: 40px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid #c00;
+      padding-bottom: 10px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #c00;
+    }
+    .company-info {
+      text-align: right;
+    }
+    h1 {
+      text-align: right;
+      margin: 10px 0;
+    }
+    .details {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    .details div {
+      width: 48%;
+    }
+    [contenteditable="true"] {
+      border-bottom: 1px dashed #ccc;
+      padding: 2px 4px;
+      cursor: text;
+    }
+    [contenteditable="true"]:focus {
+      outline: 2px solid #c00;
+      border-radius: 3px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+    tr {
+      border-bottom: 1px solid #ccc;
+    }
+    th {
+      background-color: #c00;
+      color: #fff;
+    }
+    .total {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .footer {
+      margin-top: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 2px solid #c00;
+      padding-top: 10px;
+      font-size: 14px;
+    }
+    .btn {
+      display: inline-block;
+      margin: 20px 5px;
+      background-color: #c00;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #900;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    @media print {
+      .btn, th:nth-child(5), td:nth-child(5) {
+        display: none !important;
+      }
+      body {
+        background: white;
+        text-transform: capitalize !important;
+      }
+      .invoice {
+        box-shadow: none;
+        margin: 0;
+      }
+      th {
+        background-color: #c00 !important;
+        -webkit-print-color-adjust: exact;
+        color: #fff !important;
+      }
+      tr {
+        border-bottom: 1px solid #999 !important;
+      }
+      td, p, h1, h2, h3, strong, span, [contenteditable="true"] {
+        text-transform: capitalize !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice" id="invoiceContent">
+    <header>
+      <div class="logo" contenteditable="true">Printzion Technology</div>
+      <div class="company-info">
+        <h1>INVOICE</h1>
+        <p>Invoice No: <span id="invoiceNumber"></span><br>Invoice Date: <span id="invoiceDate"></span></p>
+      </div>
+    </header>
+
+    <div class="details">
+      <div>
+        <h3>INVOICE TO:</h3>
+        <p><strong contenteditable="true" id="clientName">JITEPROJEKTS</strong><br>
+        Address: <span contenteditable="true" id="clientAddress">11b Rev. Ogunbiyi Street, GRA Ikeja.</span></p>
+      </div>
+      <div>
+        <h3>PAYMENT METHOD:</h3>
+        <p>Account No: <span contenteditable="true">1019664793</span><br>
+        Account Name: <span contenteditable="true">Printzion Technology</span><br>
+        Bank Name: <span contenteditable="true">Zenith Bank</span></p>
+      </div>
+    </div>
+
+    <table id="invoiceTable">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Unit Price</th>
+          <th>Qty</th>
+          <th>Total</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="invoiceItems">
+        <tr>
+          <td><input type="text" value="hp officejet pro 912 ink black"></td>
+          <td><input type="number" value="35000" oninput="updateTotals()"></td>
+          <td><input type="number" value="2" oninput="updateTotals()"></td>
+          <td class="rowTotal">₦70,000</td>
+          <td><button onclick="removeRow(this)">❌</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button class="btn" onclick="addItem()">Add Item</button>
+
+    <h2 class="total">Total: ₦<span id="grandTotal">70000</span></h2>
+
+    <div class="footer">
+      <div>
+        <p><strong contenteditable="true">THANK YOU FOR YOUR PATRONAGE</strong><br>
+        📞 <span contenteditable="true">+234 7062774479</span><br>
+        ✉️ <span contenteditable="true">infoprintzion@gmail.com</span><br>
+        📍 <span contenteditable="true">No 2, Golden Water Estate, Isheri Olofin.</span></p>
+      </div>
+      <div style="text-align:right;">
+        <p>For: <span contenteditable="true">PRINTZION TECHNOLOGY</span><br><br>
+        _______________________<br>
+        <span contenteditable="true">Osamuel</span></p>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn" id="printBtn">Download / Print Invoice</button>
+
+  <script>
+    // Auto-assign invoice number and date
+    const invoiceNumber = '#0' + Math.floor(Math.random() * 90000 + 10000);
+    const today = new Date();
+    const options = { day: '2-digit', month: 'short', year: 'numeric' };
+    const formattedDate = today.toLocaleDateString('en-GB', options);
+
+    document.getElementById('invoiceNumber').textContent = invoiceNumber;
+    document.getElementById('invoiceDate').textContent = formattedDate;
+
+    function addItem() {
+      const table = document.getElementById('invoiceItems');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input type="text" placeholder="Description"></td>
+        <td><input type="number" placeholder="Unit Price" oninput="updateTotals()"></td>
+        <td><input type="number" placeholder="Qty" oninput="updateTotals()"></td>
+        <td class="rowTotal">₦0</td>
+        <td><button onclick="removeRow(this)">❌</button></td>
+      `;
+      table.appendChild(row);
+    }
+
+    function removeRow(button) {
+      button.parentElement.parentElement.remove();
+      updateTotals();
+    }
+
+    function updateTotals() {
+      let grandTotal = 0;
+      const rows = document.querySelectorAll('#invoiceItems tr');
+
+      rows.forEach(row => {
+        const price = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        const qty = parseFloat(row.cells[2].querySelector('input').value) || 0;
+        const total = price * qty;
+        row.querySelector('.rowTotal').textContent = `₦${total.toLocaleString()}`;
+        grandTotal += total;
+      });
+
+      document.getElementById('grandTotal').textContent = grandTotal.toLocaleString();
+    }
+
+    // Custom print function with dynamic filename
+    document.getElementById('printBtn').addEventListener('click', () => {
+      const clientName = document.getElementById('clientName').innerText.trim().replace(/\s+/g, '_');
+      const companyName = document.querySelector('.logo').innerText.trim().replace(/\s+/g, '_');
+      const dateStr = new Date().toISOString().split('T')[0];
+      const fileName = `${clientName}_${companyName}_Invoice${invoiceNumber}_${dateStr}`;
+      document.title = fileName;
+      window.print();
+      setTimeout(() => { document.title = 'Printzion Invoice Generator'; }, 1000);
+    });
+  </script>
+</body>
+</html>

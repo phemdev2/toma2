@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Forum Template</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .forum-header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        .forum-thread {
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: white;
+        }
+        .post-form {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="forum-header">
+        <h1>My Forum</h1>
+    </div>
+
+    <div class="container mt-4">
+        <div id="forum-threads">
+            <div class="forum-thread">
+                <h5>Thread Title 1</h5>
+                <p>Posted by User1 on 2023-09-30</p>
+                <p>Some content about this thread...</p>
+            </div>
+            <div class="forum-thread">
+                <h5>Thread Title 2</h5>
+                <p>Posted by User2 on 2023-09-29</p>
+                <p>Some content about this thread...</p>
+            </div>
+            <!-- More threads can be added here -->
+        </div>
+
+        <div class="post-form">
+            <h5>Create a New Thread</h5>
+            <form id="new-thread-form">
+                <div class="form-group">
+                    <label for="thread-title">Title</label>
+                    <input type="text" class="form-control" id="thread-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="thread-content">Content</label>
+                    <textarea class="form-control" id="thread-content" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('new-thread-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('thread-title').value;
+            const content = document.getElementById('thread-content').value;
+
+            const threadContainer = document.getElementById('forum-threads');
+            const newThread = document.createElement('div');
+            newThread.classList.add('forum-thread');
+            newThread.innerHTML = `
+                <h5>${title}</h5>
+                <p>Posted by You on ${new Date().toLocaleDateString()}</p>
+                <p>${content}</p>
+            `;
+            threadContainer.prepend(newThread);
+
+            // Clear the form
+            this.reset();
+        });
+    </script>
+</body>
+</html>
