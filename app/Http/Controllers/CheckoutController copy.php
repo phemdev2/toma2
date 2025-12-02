@@ -6,9 +6,24 @@ use Illuminate\Http\Request;
 use App\Models\Transaction; // Ensure you have a Transaction model
 use App\Models\TransactionItem; // Ensure you have a TransactionItem model
 use Illuminate\Support\Facades\DB; // Import DB for transactions
-
+use App\Models\Product;
 class CheckoutController extends Controller
 {
+
+    public function index()
+    {
+        $user = auth()->user();
+        $storeId = $user->store_id;
+
+        // Fetch products
+        $products = Product::with(['variants', 'inventories' => function ($query) use ($storeId) {
+            $query->where('store_id', $storeId);
+        }])->get();
+ 
+        return view('pos.index', compact('products', 'storeId'));
+    }
+
+    
     public function cashCheckout(Request $request)
     {
         // Validate incoming request
