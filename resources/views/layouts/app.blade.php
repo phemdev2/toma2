@@ -1,502 +1,262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light"> <!-- Explicitly set class="light" -->
 
 <head>
     <meta charset="UTF-8">
-    <!-- Favicon -->
-<link rel="icon" href="{{ asset('img/space.png') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('img/space.png') }}" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'IPOS')</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#1a1a1a',
+                            surface: '#2a2a2a',
+                            text: '#e5e7eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Icons & Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- Alpine JS -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
     <style>
-        * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-        body {
-            transition: background-color 0.3s, color 0.3s;
-            font-family: 'Arial', sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            
-        }
-
-        .main-content {
-            overflow-y: auto;
-            max-height: 100vh;
-        }
-
-        #sidebarToggle {
-            z-index: 1000;
-        }
-
-        nav {
-            z-index: 800;
-        }
-
-        /* Table styles */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 0.5rem;
-            text-align: left;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        /* Light mode styles */
-        .light-theme th {
-            background-color: #f9f9f9;
-            color: #333;
-        }
-
-        .light-theme td {
-            background-color: #fff;
-            color: #333;
-        }
-
-        /* Dark mode styles */
-        .dark-theme th {
-            background-color: #2a2a2a;
-            color: #ddd;
-        }
-
-        .dark-theme td {
-            background-color: #1a1a1a;
-            color: #ddd;
-        }
-
-        .subscription-card {
-      background: #ffffff;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      border-radius: 12px;
-      padding: 5px;
-      width: 100%;
-      text-align: center;
-      text-transform: capitalize;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .subscription-card:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .subscription-card .plan {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: #333;
-      margin-bottom: 5px;
-    }
-
-    .subscription-card .plan .icon {
-      margin-right: 5px;
-      font-size: 2rem;
-    }
-
-    .subscription-card p {
-      font-size: 1rem;
-      color: #555;
-      margin-bottom: 5px;
-    }
-
-    .subscription-card .expired {
-      color: #ff6b6b;
-    }
-
-    .subscription-card .active {
-      color: #4caf50;
-    }
-
-    .subscription-card button {
-      background: #4caf50;
-      color: #fff;
-      font-size: 1rem;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-
-    .subscription-card button:hover {
-      background: #43a047;
-    }
-
-    .subscription-card .renew-btn {
-      background: #ff6b6b;
-    }
-
-    .subscription-card .renew-btn:hover {
-      background: #e53935;
-    }
-
-    /* Icons */
-    .icon-basic {
-      color: #2196f3;
-    }
-
-    .icon-premium {
-      color: #ff9800;
-    }
-
-    .icon-enterprise {
-      color: #9c27b0;
-    }
-
-    .icon-default {
-      color: #333;
-    }
-
-    .card {
-    border-radius: 15px;
-}
-
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #ddd;
-}
-
-.card-body {
-    padding: 20px;
-    background-color: #fff;
-}
-
-h2 {
-    font-size: 2rem;
-    color: #333;
-    font-weight: bold;
-}
-
-h3 {
-    font-size: 1.5rem;
-    color: #444;
-}
-
-.status-info {
-    margin-bottom: 20px;
-}
-
-.status-info .d-flex {
-    font-size: 1.1rem;
-    padding: 8px;
-}
-
-.status-info .fw-bold {
-    color: #555;
-}
-
-.text-success {
-    color: green;
-    font-weight: bold;
-}
-
-.text-danger {
-    color: red;
-    font-weight: bold;
-}
-
-.alert {
-    font-size: 1.1rem;
-    border-radius: 5px;
-    padding: 15px;
-}
-
-.alert-warning {
-    background-color: #ffeb3b;
-    color: #333;
-}
-
-.alert-success {
-    background-color: #4caf50;
-    color: #fff;
-}
-
-.alert-danger {
-    background-color: #f44336;
-    color: #fff;
-}
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        .dark ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        [x-cloak] { display: none !important; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
 
-<body class="bg-gray-100 text-gray-800 h-full">
+<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 font-sans transition-colors duration-300 h-screen overflow-hidden flex" x-data="{ sidebarOpen: false }">
 
-    <div class="flex">
-        <!-- Mobile Toggle Button -->
-        <button id="sidebarToggle" class="md:hidden fixed top-5 left-5 bg-gray-800 text-white p-2 rounded shadow-lg transition duration-300 hover:bg-purple-700" aria-label="Toggle Sidebar">
-            <i class="fas fa-bars"></i>
-        </button>
+    <!-- Mobile Sidebar Backdrop -->
+    <div x-show="sidebarOpen" @click="sidebarOpen = false" x-transition.opacity 
+         class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"></div>
 
-        <nav id="sidebar" class="sidebar bg-purple-900 text-white h-screen w-64 p-5 fixed md:block transition-transform transform -translate-x-full md:translate-x-0">
-    <h4 class="mb-4 text-2xl font-bold text-center bg-purple-800 p-2" style="font-family: 'Montserrat', sans-serif;">DEOMEZE</h4>
-    <ul class="space-y-2">
-        @can('update-inventories')
-        <li>
-            <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('dashboard') ? 'bg-red-600' : '' }}" href="{{ route('dashboard') }}">
-                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
-            </a>
-        </li>
-
-        <li>
-            <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('user-totals') ? 'bg-red-600' : '' }}" href="{{ route('user.totals') }}">
-                <i class="fas fa-chart-pie mr-2"></i> Reports
-            </a>
-        </li>
-        @endcan
-
-<li>
-    <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('daily') ? 'bg-red-600' : '' }}" 
-       href="{{ route('daily.index') }}">
-        <i class="fas fa-calendar-day mr-2"></i> Daily Records
-    </a>
-</li>
-<li>
-    <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('daily/report') ? 'bg-red-600' : '' }}" 
-       href="{{ route('daily.report') }}">
-        <i class="fas fa-chart-line mr-2"></i> Report
-    </a>
-</li>
-
-
-      
-
-        <!-- Conditionally disable menu items if subscription is expired -->
-        @if(!$isSubscriptionExpired)
-
-        <li>
-            <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('pos') ? 'bg-red-600' : '' }}" 
-               href="{{ route('pos.index', ['user_id' => Auth::id(), 'store_id' => Auth::user()->store_id]) }}" 
-               target="_blank">
-                <i class="fas fa-cash-register mr-2"></i> POS
-            </a>
-        </li>
-            <li>
-                <a href="{{ route('purchases.index') }}" class="text-white">Purchases</a>
-                <a href="{{ route('purchases.create') }}" class="text-white">Add Purchase</a>
-            </li>
-
-            <li>
-                <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('orders') ? 'bg-red-600' : '' }}" href="{{ route('orders.index') }}">
-                    <i class="fas fa-shopping-cart mr-2"></i> Transactions
-                </a>
-            </li>
-
-            @can('view-products')
-            <li>
-                <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('products') ? 'bg-red-600' : '' }}" href="{{ route('products.index') }}">
-                    <i class="fas fa-box mr-2"></i> Products
-                </a>
-            </li>
-            @endcan
-
-            @can('add-inventory')
-            <li>
-                <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('store_inventories/create') ? 'bg-red-600' : '' }}" href="{{ route('store_inventories.create') }}">
-                    <i class="fas fa-plus-circle mr-2"></i> Purchase
-                </a>
-            </li>
-            @endcan
-          
-            
-            <li x-data="{ open: false }" class="relative">
-    <button @click="open = !open" class="flex items-center p-2 w-full text-white rounded hover:bg-purple-700 focus:outline-none">
-        <i class="fas fa-user-cog mr-2"></i> Subscription
-        <i class="fas fa-chevron-down ml-2"></i>
-    </button>
-    <ul x-show="open" x-transition @click.away="open = false" class="absolute left-0 w-full mt-2 space-y-2 bg-white shadow-lg rounded-md hidden" :class="{'block': open, 'hidden': !open}">
-        <!-- View Subscription -->
-        <li>
-            <a class="flex items-center p-2 text-gray-800 hover:bg-gray-200 rounded" href="{{ route('subscriptions.show', ['id' => Auth::user()->store_id]) }}">
-                <i class="fas fa-eye mr-3 text-blue-500"></i> View Subscription
-            </a>
-        </li>
-        <!-- All Subscriptions (Subscription Index) -->
-        <li>
-            <a class="flex items-center p-2 text-gray-800 hover:bg-gray-200 rounded" href="{{ route('subscription.index') }}">
-                <i class="fas fa-list mr-3 text-green-500"></i> All Subscriptions
-            </a>
-        </li>
-        <!-- Renew Subscription -->
-        <li>
-            <a class="flex items-center p-2 text-gray-800 hover:bg-gray-200 rounded" href="{{ route('subscription.create') }}">
-                <i class="fas fa-redo mr-3 text-yellow-500"></i> Renew Subscription
-            </a>
-        </li>
-    </ul>
-</li>
-
-
-            @can('create-product')
-            <li>
-                <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('products/create') ? 'bg-red-600' : '' }}" href="{{ route('products.create') }}">
-                    <i class="fas fa-plus mr-2"></i> Create Product
-                </a>
-            </li>
-            @endcan
-        @else
-            <!-- Optionally, show a message or just disable the links -->
-            <li>
-                <a href="#" class="text-gray-500 cursor-not-allowed">
-                    <i class="fas fa-shopping-cart mr-2"></i> Transactions (Subscription Expired)
-                </a>
-            </li>
-            <li>
-                <a href="#" class="text-gray-500 cursor-not-allowed">
-                    <i class="fas fa-box mr-2"></i> Products (Subscription Expired)
-                </a>
-            </li>
-        @endif
-    
-                <li>
-                    <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('users*') ? 'bg-red-600' : '' }}" href="{{ route('users.index') }}">
-                        <i class="fas fa-users mr-2"></i> Users
-                    </a>
-                </li>
-               
-        <li>
-            <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('stores*') ? 'bg-red-600' : '' }}" href="{{ route('stores.index') }}">
-                <i class="fa-regular fa-address-book mr-2"></i> Store Settings
-            </a>
-        </li>
-
-        @can('view-product-cards')
-        <li>
-            <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('cashout') ? 'bg-red-600' : '' }}" href="{{ route('cashout.index') }}">
-                <i class="fas fa-money-bill-wave mr-2"></i> Cashout
-            </a>
-        </li>
-        @endcan
-
-       
-
-                @can('view-store-inventories')
-                <li>
-                    <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('store_inventories') ? 'bg-red-600' : '' }}" href="{{ route('store_inventories.index') }}">
-                        <i class="fas fa-warehouse mr-2"></i> Store Inventories
-                    </a>
-                </li>
-                @endcan
-
-                @can('update-inventories')
-                <li>
-                    <a class="flex items-center p-2 rounded hover:bg-purple-700 {{ request()->is('admin/settings') ? 'bg-gray-600' : '' }}" href="{{ route('admin.settings.index') }}">
-                        <i class="fas fa-cogs mr-2"></i> Over Selling
-                    </a>
-                </li>
-                @endcan
-    </ul>
-    <div class="flex items-center mt-5">
-                <input type="checkbox" id="theme-toggle" class="mr-2" aria-label="Toggle Dark Theme">
-                <label for="theme-toggle" class="text-sm">Dark Theme</label>
-            </div>
-</nav>
-
-
-<div class="main-content p-5 flex-1 ml-0 md:ml-64 transition-margin" style="position: relative; padding-top: 2px; width: 100%; max-width: 100%;">
-    <div class="flex justify-between items-center mb-5" style="position: sticky; top: 0; z-index: 10; background-color: #fff; padding: 10px 20px; border-bottom: 1px solid #ddd; width: 100%; box-sizing: border-box;">
-        @auth
-      <div class="flex flex-col md:flex-row md:items-center text-purple-900 space-y-1 md:space-y-0 md:space-x-4">
-    <div class="flex items-center">
-        <i class="fas fa-user-circle text-xl mr-2"></i>
-        <span class="font-bold" style="font-size: 1.1rem;">
-            {{ ucwords(Auth::user()->name) }}
-        </span>
-    </div>
-
-    @if(Auth::user()->store)
-    <div class="flex items-center text-sm text-gray-700 md:ml-4">
-        <i class="fas fa-map-marker-alt text-red-500 mr-1"></i>
-        <span>
-            {{ Auth::user()->store->name }} 
-            @if(Auth::user()->store->location)
-                — {{ Auth::user()->store->location }}
-            @endif
-        </span>
-    </div>
-    @endif
-</div>
-
-
-        <form method="POST" action="{{ route('logout') }}" x-data>
-            @csrf
-            <button type="submit" class="text-red-500 hover:text-red-700 text-lg">
-                <i class="fas fa-sign-out-alt mr-1"></i> Log Out
-            </button>
-        </form>
-        @else
-        <div class="flex flex-col space-y-1">
-            <a href="{{ route('login') }}" class="text-blue-500 hover:underline text-lg">Log In</a>
-            <a href="{{ route('register') }}" class="text-blue-500 hover:underline text-lg">Register</a>
-        </div>
-        @endauth
-    </div>
-    
-    <!-- Success message section -->
-    @if(session('success'))
-    <div class="bg-green-500 text-white p-3 rounded mb-5" style="width: 100%; max-width: 100%; font-size: 1.1rem;">
-        {{ session('success') }}
-    </div>
-    @endif
-
-    @yield('content')
-</div>
-
-
-
+    <!-- Sidebar -->
+    <nav :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" 
+         class="sidebar fixed inset-y-0 left-0 z-50 w-64 bg-purple-900 dark:bg-gray-800 text-white transform md:translate-x-0 md:relative flex flex-col h-full shadow-lg">
         
+        <!-- DYNAMIC STORE NAME SECTION -->
+        <div class="p-5 border-b border-purple-800 dark:border-gray-700 flex items-center justify-center min-h-[80px]">
+            <h4 class="text-2xl font-bold text-center font-montserrat tracking-wide break-words uppercase">
+                @auth
+                    <!-- Uses Null Safe Operator (?->) to prevent crash if store is null -->
+                    {{ Auth::user()->store?->company ?? 'IPOS SYSTEM' }}
+                @else
+                    IPOS SYSTEM
+                @endauth
+            </h4>
+        </div>
+
+        <!-- Menu Items -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            
+            @can('update-inventories')
+            <a href="{{ route('dashboard') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('dashboard') ? 'bg-red-600' : '' }}">
+                <i class="fas fa-tachometer-alt w-6 text-center"></i> <span class="ml-2">Dashboard</span>
+            </a>
+            <a href="{{ route('user.totals') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('user-totals') ? 'bg-red-600' : '' }}">
+                <i class="fas fa-chart-pie w-6 text-center"></i> <span class="ml-2">Reports</span>
+            </a>
+            @endcan
+
+            <a href="{{ route('daily.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('daily') ? 'bg-red-600' : '' }}">
+                <i class="fas fa-calendar-day w-6 text-center"></i> <span class="ml-2">Daily Records</span>
+            </a>
+            
+             <a href="{{ route('daily.report') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('daily/report') ? 'bg-red-600' : '' }}">
+                <i class="fas fa-chart-line w-6 text-center"></i> <span class="ml-2">Report</span>
+            </a>
+
+            <!-- Subscription Logic -->
+            @if(isset($isSubscriptionExpired) && !$isSubscriptionExpired)
+                <a href="{{ route('pos.index', ['user_id' => Auth::id(), 'store_id' => Auth::user()->store_id ?? 0]) }}" target="_blank" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('pos') ? 'bg-red-600' : '' }}">
+                    <i class="fas fa-cash-register w-6 text-center"></i> <span class="ml-2">POS</span>
+                </a>
+                
+                 <a href="{{ route('purchases.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('purchases') ? 'bg-red-600' : '' }}">
+                    <i class="fas fa-truck-loading w-6 text-center"></i> <span class="ml-2">Purchases</span>
+                </a>
+
+                <a href="{{ route('orders.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('orders') ? 'bg-red-600' : '' }}">
+                    <i class="fas fa-shopping-cart w-6 text-center"></i> <span class="ml-2">Transactions</span>
+                </a>
+
+                @can('view-products')
+                <a href="{{ route('products.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('products') ? 'bg-red-600' : '' }}">
+                    <i class="fas fa-box w-6 text-center"></i> <span class="ml-2">Products</span>
+                </a>
+                @endcan
+
+                <!-- Subscription Dropdown -->
+                <div x-data="{ open: false }" class="relative">
+                    <button @click="open = !open" class="flex items-center w-full p-3 rounded hover:bg-purple-700 dark:hover:bg-gray-700 focus:outline-none justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-cog w-6 text-center"></i> <span class="ml-2">Subscription</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform" :class="open ? 'rotate-180' : ''"></i>
+                    </button>
+                    <div x-show="open" x-collapse x-cloak class="pl-8 space-y-1 mt-1">
+                        <a href="{{ route('subscriptions.show', ['id' => Auth::user()->store_id ?? 0]) }}" class="block p-2 text-sm text-gray-200 hover:text-white hover:bg-purple-600 rounded">View Plan</a>
+                        <a href="{{ route('subscription.index') }}" class="block p-2 text-sm text-gray-200 hover:text-white hover:bg-purple-600 rounded">All Plans</a>
+                        <a href="{{ route('subscription.create') }}" class="block p-2 text-sm text-gray-200 hover:text-white hover:bg-purple-600 rounded">Renew</a>
+                    </div>
+                </div>
+
+                @can('create-product')
+                <a href="{{ route('products.create') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('products/create') ? 'bg-red-600' : '' }}">
+                    <i class="fas fa-plus w-6 text-center"></i> <span class="ml-2">Create Product</span>
+                </a>
+                @endcan
+            @else
+                <div class="p-3 bg-red-800 bg-opacity-50 rounded text-sm text-gray-300">
+                    <i class="fas fa-lock mr-1"></i> Feature Locked (Expired)
+                </div>
+            @endif
+
+            <a href="{{ route('users.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('users*') ? 'bg-red-600' : '' }}">
+                <i class="fas fa-users w-6 text-center"></i> <span class="ml-2">Users</span>
+            </a>
+
+            <a href="{{ route('stores.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('stores*') ? 'bg-red-600' : '' }}">
+                <i class="fa-regular fa-address-book w-6 text-center"></i> <span class="ml-2">Store Settings</span>
+            </a>
+            
+             @can('view-product-cards')
+            <a class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('cashout') ? 'bg-red-600' : '' }}" href="{{ route('cashout.index') }}">
+                <i class="fas fa-money-bill-wave w-6 text-center"></i> <span class="ml-2">Cashout</span>
+            </a>
+            @endcan
+            
+            @can('view-store-inventories')
+            <a class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('store_inventories') ? 'bg-red-600' : '' }}" href="{{ route('store_inventories.index') }}">
+                <i class="fas fa-warehouse w-6 text-center"></i> <span class="ml-2">Store Inventories</span>
+            </a>
+            @endcan
+
+            @can('update-inventories')
+            <a class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('admin/settings') ? 'bg-gray-600' : '' }}" href="{{ route('admin.settings.index') }}">
+                <i class="fas fa-cogs w-6 text-center"></i> <span class="ml-2">Over Selling</span>
+            </a>
+            @endcan
+
+        </div>
+
+        <!-- Footer / Theme Toggle -->
+        <div class="p-4 border-t border-purple-800 dark:border-gray-700 bg-purple-900 dark:bg-gray-800">
+            <div class="flex items-center justify-between">
+                <span class="text-sm">Dark Mode</span>
+                <button id="theme-toggle" class="relative inline-flex items-center h-6 rounded-full w-11 focus:outline-none bg-gray-400 dark:bg-green-500 transition-colors">
+                    <span class="sr-only">Enable dark mode</span>
+                    <span class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform translate-x-1 dark:translate-x-6"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <!-- Top Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-md h-16 flex items-center justify-between px-6 z-10 shrink-0">
+            <!-- Mobile Toggle -->
+            <button @click="sidebarOpen = !sidebarOpen" class="md:hidden text-gray-600 dark:text-gray-300 text-2xl focus:outline-none">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- User Info -->
+            <div class="flex items-center justify-end w-full space-x-4">
+                @auth
+                    <div class="text-right hidden sm:block">
+                        <div class="text-sm font-bold text-gray-800 dark:text-white">{{ ucwords(Auth::user()->name) }}</div>
+                        @if(Auth::user()->store)
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-map-marker-alt text-red-500 mr-1"></i>
+                                {{ Auth::user()->store->name }}
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-semibold border border-red-200 p-2 rounded hover:bg-red-50 dark:hover:bg-gray-700 transition">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Log Out
+                        </button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="text-blue-500 hover:underline">Log In</a>
+                @endauth
+            </div>
+        </header>
+
+        <!-- Scrollable Content Area -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6 relative">
+            
+            <!-- Alert Messages -->
+            @if(session('success'))
+                <div class="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm dark:bg-green-900 dark:text-green-200" role="alert">
+                    <p class="font-bold">Success</p>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm dark:bg-red-900 dark:text-red-200" role="alert">
+                    <p class="font-bold">Error</p>
+                    <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
+            <!-- Page Content -->
+            @yield('content')
+        </main>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <!-- Theme Logic Script -->
     <script>
-        // Sidebar Toggle for Mobile
-        document.getElementById('sidebarToggle').addEventListener('click', function () {
-        document.getElementById('sidebar').classList.toggle('-translate-x-full');
-    });
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const htmlElement = document.documentElement;
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const themeToggle = document.getElementById('theme-toggle');
-            const body = document.body;
-            const sidebar = document.querySelector('.sidebar');
+        // 1. Load saved theme
+        const savedTheme = localStorage.getItem('theme');
 
-            // Check saved theme in local storage
-            const savedTheme = localStorage.getItem('theme') || 'light-theme';
-            body.classList.add(savedTheme);
-            sidebar.classList.add(savedTheme);
-            themeToggle.checked = savedTheme === 'dark-theme';
+        // Logic: Only enable dark mode if explicitly saved as 'dark'. 
+        // Otherwise, defaults to light (ignoring system preference).
+        if (savedTheme === 'dark') {
+            htmlElement.classList.add('dark');
+        } else {
+            htmlElement.classList.remove('dark');
+        }
 
-            themeToggle.addEventListener('change', function () {
-                if (this.checked) {
-                    body.classList.replace('bg-gray-100', 'bg-gray-900');
-                    body.classList.replace('text-gray-800', 'text-gray-200');
-                    sidebar.classList.replace('bg-purple-900', 'bg-purple-700'); // Sidebar dark theme
-                    body.classList.replace('light-theme', 'dark-theme');
-                } else {
-                    body.classList.replace('bg-gray-900', 'bg-gray-100');
-                    body.classList.replace('text-gray-200', 'text-gray-800');
-                    sidebar.classList.replace('bg-purple-700', 'bg-purple-900'); // Sidebar light theme
-                    body.classList.replace('dark-theme', 'light-theme');
-                }
-                // Toggle table styles
-                document.querySelectorAll('table').forEach(table => {
-                    table.classList.toggle('dark-theme', this.checked);
-                });
-                localStorage.setItem('theme', this.checked ? 'dark-theme' : 'light-theme');
-            });
+        // 2. Toggle functionality
+        themeToggleBtn.addEventListener('click', () => {
+            if (htmlElement.classList.contains('dark')) {
+                htmlElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                htmlElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
         });
-
-    
     </script>
 </body>
-
 </html>

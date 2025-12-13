@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL; 
 use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,7 +23,20 @@ class AppServiceProvider extends ServiceProvider
      */
   public function boot(): void
 {
-    // Share subscription expiry status and date with all views
+    // ----------------------------------------------------------------------
+    // 1. Fix for Ngrok / VS Code Port Forwarding / Tunnels
+    // ----------------------------------------------------------------------
+    // This detects if the request is coming via a secure tunnel and forces
+    // Laravel to generate HTTPS links with the correct tunnel URL.
+    if (isset($_SERVER['HTTP_X_FORWARDED_HOST'])) {
+        $url = 'https://' . $_SERVER['HTTP_X_FORWARDED_HOST'];
+        URL::forceRootUrl($url);
+        URL::forceScheme('https');
+    }
+
+    // ----------------------------------------------------------------------
+    // 2. Share subscription expiry status and date with all views
+    // ----------------------------------------------------------------------
     View::composer('*', function ($view) {
         // Initialize default values for unauthenticated users
         $isSubscriptionExpired = true;
@@ -57,9 +71,6 @@ class AppServiceProvider extends ServiceProvider
                     
                     // Format the expiry date for display
                     $subscriptionExpiryDateFormatted = $subscriptionExpiryDate->format('Y-m-d');
-                } else {
-                    // Handle invalid plan types if necessary (optional)
-                    // Log an error or set default values as needed
                 }
 
                 // Set the subscription type (planType) for the view
@@ -77,5 +88,4 @@ class AppServiceProvider extends ServiceProvider
         ]);
     });
 }
-
 }

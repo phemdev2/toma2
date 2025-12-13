@@ -838,7 +838,7 @@
                 this.removeItem(key);
                 if (this.activeIndex >= this.keys.length) this.activeIndex = this.keys.length - 1;
               }
-            },
+            },https://chatgpt.com/c/69282b3d-6d58-8328-958f-980d1f474445
             increaseQty() {
               const key = this.keys[this.activeIndex];
               if (key && this.cart[key]) {

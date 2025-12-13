@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // <--- FIXED: Added missing import
 
 class PosController extends Controller
 {
@@ -13,34 +14,28 @@ class PosController extends Controller
         
         // Safety Check: Ensure user has a store
         if (!$user->store_id) {
-            return redirect()->back()->with('error', 'You are not assigned to a store.');
+            // Check if request has a referrer, otherwise default to home or dashboard
+            return redirect(route('dashboard'))->with('error', 'You are not assigned to a store.');
         }
 
         $storeId = $user->store_id;
 
-        // 1. Fetch Products
+        // 1. Fetch Products with Eager Loading (Solves the 30-second timeout)
+        // We load 'variants' and only the 'storeInventories' for the current store
         $products = Product::with(['variants', 'storeInventories' => function ($query) use ($storeId) {
             $query->where('store_id', $storeId);
-        }])->get();
+        }])
+        ->latest() // Optional: Order by newest
+        ->get();
 
-        // 2. Transform Data
-        $mappedProducts = $products->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'barcode' => $product->barcode,
-                'price' => (float) $product->sale, 
-                // Handle case where inventory might be missing
-                'stock' => $product->storeInventories->sum('quantity') ?? 0,
-                'variants' => $product->variants
-            ];
-        });
-
-        // 3. PASS THE STORE VARIABLE HERE
+        // 2. Return View
+        // We pass the Eloquent collection directly. 
+        // The View (pos.index) handles the conversion to JSON for the JS frontend.
         return view('pos.index', [
-            'products' => $mappedProducts,
+            'products' => $products,
             'user' => $user,
-            'store' => $user->store // <--- THIS LINE IS CRITICAL
+            'store' => $user->store,
+            'storeId' => $storeId
         ]);
     }
 }

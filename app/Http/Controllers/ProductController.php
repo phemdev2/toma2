@@ -258,4 +258,30 @@ class ProductController extends Controller
 
         return $pdf->download('products.pdf');
     }
+
+    /**
+     * Remove multiple products from storage.
+     */
+    public function bulkDelete(Request $request)
+    {
+        // 1. Decode the JSON array of IDs sent from the frontend
+        $ids = json_decode($request->input('ids'), true);
+
+        if (empty($ids) || !is_array($ids)) {
+            return redirect()->back()->with('error', 'No products selected for deletion.');
+        }
+
+        // 2. Perform the delete
+        // Using get() and loop ensures Model Events (like deleting images) are triggered
+        $products = \App\Models\Product::whereIn('id', $ids)->get();
+        
+        $count = 0;
+        foreach ($products as $product) {
+            // Add any specific logic here (e.g., check if product has sales history)
+            $product->delete();
+            $count++;
+        }
+
+        return redirect()->back()->with('success', "Successfully deleted {$count} products.");
+    }
 }

@@ -4,149 +4,224 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt #{{ $order->id }}</title>
-    
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
-        /* OPTIMIZATION: Use system fonts for instant rendering (no downloads) */
-        body { 
-            font-family: 'Courier New', Courier, monospace; 
-            background-color: #f3f4f6; 
-            padding: 20px; 
-            margin: 0; 
-            color: #000; 
-        }
-        
-        /* Container */
-        .receipt-card {
-            background: white;
-            max-width: 480px;
-            margin: 0 auto;
-            border: 1px solid #ccc;
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #e5e7eb;
+            margin: 0;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #000;
+            font-size: 12px;
         }
 
-        /* Typography */
-        h1 { font-size: 20px; font-weight: 900; margin: 0 0 5px 0; text-transform: uppercase; text-align: center; }
-        p { margin: 2px 0; font-size: 12px; }
+        .receipt-card {
+            background: #fff;
+            width: 100%;
+            max-width: 302px; /* 80mm */
+            margin: 0 auto;
+            padding: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 16px;
+            text-align: center;
+            margin: 0 0 5px 0;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        p { margin: 2px 0; }
+
         .text-center { text-align: center; }
         .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .dashed-line { border-bottom: 1px dashed #000; margin: 10px 0; display: block; }
-        
-        /* Info Grid */
-        .info-box { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+        .text-bold { font-weight: bold; }
+        .uppercase { text-transform: uppercase; }
 
-        /* Table */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; }
-        th { text-align: left; border-bottom: 2px solid #000; padding: 5px 0; text-transform: uppercase; }
-        td { padding: 5px 0; vertical-align: top; }
-        .total-row { font-weight: bold; font-size: 16px; border-top: 2px solid #000; padding-top: 10px; margin-top: 10px; text-align: right; }
+        .info-box {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
 
-        /* QR Section */
-        .qr-section { text-align: center; margin-top: 20px; }
-        .qr-img { width: 100px; height: 100px; }
+        .dashed-line {
+            border-bottom: 1px dashed #000;
+            margin: 8px 0;
+        }
 
-        /* Buttons (Hidden in print) */
-        .btn-group { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
-        .btn { padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; border: none; font-size: 14px; text-decoration: none; color: white; font-family: sans-serif; }
-        .btn-print { background-color: #1f2937; }
-        .btn-new { background-color: #6366f1; }
-        .btn:hover { opacity: 0.9; }
+        .solid-line {
+            border-bottom: 1px solid #000;
+            margin: 8px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+            padding: 5px 0;
+        }
+
+        td {
+            padding: 4px 0;
+            vertical-align: top;
+        }
+
+        .item-name { display: block; }
+
+        .total-section {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .qr-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 12px;
+        }
 
         @media print {
-            body { background: white; padding: 0; }
-            .receipt-card { box-shadow: none; border: none; padding: 0; width: 100%; max-width: 100%; margin: 0; }
-            .no-print { display: none !important; }
+            @page { margin: 0; }
+            body { background: #fff; padding: 0; }
+            .receipt-card { box-shadow: none; padding: 5px; width: 100%; max-width: 100%; }
+            .no-print { display: none; }
         }
     </style>
 </head>
+
 <body>
 
 <div class="receipt-card">
 
-    <!-- Header -->
+    <!-- HEADER -->
     <div class="text-center">
-        <h1>{{ Auth::user()->store->company ?? 'Store Name' }}</h1>
-        <p>{{ Auth::user()->store->address }}</p>
-        <p>Tel: {{ Auth::user()->store->phone }}</p>
+        <h1>{{ optional(Auth::user()->store)->company ?? 'Store Name' }}</h1>
+        <p>{{ optional(Auth::user()->store)->address ?? 'Address' }}</p>
+        <p>Tel: {{ optional(Auth::user()->store)->phone ?? 'N/A' }}</p>
     </div>
 
     <div class="dashed-line"></div>
 
-    <!-- Info -->
+    <!-- META -->
     <div class="info-box">
-        <span>Receipt #: <strong>{{ $order->id }}</strong></span>
+        <span>RCPT: #{{ $order->id }}</span>
         <span>{{ \Carbon\Carbon::parse($order->created_at)->format('d/m/y H:i') }}</span>
     </div>
+
     <div class="info-box">
-        <span>Staff: {{ substr(Auth::user()->name, 0, 15) }}</span>
-        <span style="text-transform: uppercase;">{{ str_replace('_', ' ', $order->payment_method) }}</span>
+        <span>Staff: {{ \Illuminate\Support\Str::limit(Auth::user()->name, 12) }}</span>
+        <span class="uppercase">{{ str_replace('_', ' ', $order->payment_method) }}</span>
     </div>
 
-    <div class="dashed-line"></div>
+    <div class="solid-line"></div>
 
-    <!-- Table -->
+    <!-- ITEMS -->
     <table>
         <thead>
             <tr>
-                <th width="45%">Item</th>
-                <th width="15%">Qty</th>
-                <th width="20%">Price</th>
-                <th width="20%" class="text-right">Amt</th>
+                <th width="50%">Item</th>
+                <th width="15%" class="text-center">Qty</th>
+                <th width="35%" class="text-right">Total</th>
             </tr>
         </thead>
+
         <tbody>
-            @foreach ($order->items as $item)
-                <tr>
-                    <td>
-                        <span class="font-bold">{{ $item->product->name }}</span>
-                        @if($item->variant) <br><span style="font-size:10px;">({{ $item->variant->unit_type }})</span> @endif
-                    </td>
-                    <td>{{ $item->quantity }}</td>
-                    <td>{{ number_format($item->price, 0) }}</td>
-                    <td class="text-right">{{ number_format($item->price * $item->quantity, 0) }}</td>
-                </tr>
-            @endforeach
+        @foreach ($order->items as $item)
+            <tr>
+                <td>
+                    <span class="item-name text-bold">
+                        {{ optional($item->product)->name ?? 'Unknown Item' }}
+                    </span>
+                    @if(optional($item->variant)->unit_type)
+                        <span style="font-size:10px; color:#444;">
+                            ({{ $item->variant->unit_type }})
+                        </span>
+                    @endif
+                </td>
+
+                <td class="text-center">{{ $item->quantity }}</td>
+
+                <td class="text-right js-line-total">
+                    {{ number_format($item->price * $item->quantity, 2) }}
+                </td>
+            </tr>
+        @endforeach
         </tbody>
     </table>
-    
-    <!-- Total -->
-    <div class="total-row">
-        TOTAL: &#8358;{{ number_format($order->total_amount, 2) }}
+
+    <div class="dashed-line"></div>
+
+    <!-- TOTAL -->
+    <div class="total-section">
+        <span>TOTAL:</span>
+        <span id="js-total">&#8358;0.00</span>
     </div>
 
-    <!-- QR Code -->
+    <!-- QR -->
     <div class="qr-section">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ url('/receipt/' . $order->id) }}" 
-             class="qr-img" 
-             width="100" 
-             height="100" 
-             alt="QR" 
-             loading="eager">
-        <p style="font-size: 10px; margin-top: 5px;">SCAN TO VERIFY</p>
+        <div id="qr-code"></div>
+        <p style="font-size:10px; margin-top:4px;">SCAN TO VERIFY</p>
     </div>
 
-    <!-- Footer -->
+    <!-- FOOTER -->
     <div class="text-center" style="margin-top: 15px;">
-        <p>{{ Auth::user()->store->thank_you_message ?? 'Thank you for your patronage!' }}</p>
+        <p style="font-size: 11px;">
+            {{ optional(Auth::user()->store)->thank_you_message ?? 'Thank you for your patronage!' }}
+        </p>
+        <p style="font-size: 9px; margin-top: 5px;">Powered by IPOS</p>
     </div>
-   
-    
+
 </div>
 
 <script>
-    document.getElementById('newOrderBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        try {
-            if (window.self !== window.top) {
-                window.top.location.reload(); // Refresh POS
-            } else {
-                window.location.href = "{{ route('products.index') }}";
-            }
-        } catch (e) {
-            window.location.href = "/";
-        }
+document.addEventListener("DOMContentLoaded", () => {
+
+    /* ------------------------------
+       1. CALCULATE TOTAL USING JS
+       ------------------------------ */
+    let total = 0;
+
+    document.querySelectorAll(".js-line-total").forEach(cell => {
+        const value = parseFloat(cell.textContent.replace(/,/g, ""));
+        if (!isNaN(value)) total += value;
     });
+
+    document.getElementById("js-total").innerHTML =
+        "&#8358;" + total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+
+
+    /* ------------------------------
+       2. QR CODE GENERATION
+       ------------------------------ */
+    const verificationUrl = "{{ url('/orders/verify/' . $order->id) }}";
+
+    new QRCode(document.getElementById("qr-code"), {
+        text: verificationUrl,
+        width: 100,
+        height: 100,
+        colorDark: "#000",
+        colorLight: "#fff",
+        correctLevel: QRCode.CorrectLevel.M
+    });
+
+    /* ------------------------------
+       3. AUTO PRINT
+       ------------------------------ */
+    setTimeout(() => window.print(), 900);
+});
 </script>
 
 </body>

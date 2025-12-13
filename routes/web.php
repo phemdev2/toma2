@@ -2,6 +2,7 @@
 use Inertia\Inertia;
 use App\Http\Livewire\ProductList;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MobileScannerController; 
 use App\Http\Controllers\{
     ProductController,
     StoreInventoryController,
@@ -27,8 +28,20 @@ use App\Http\Controllers\{
     DailyRecordController,
     ExpenseController,
     DailyExpenseController,
+    OtpAuthController,
+    GoogleAuthController,
 };
+Route::delete('/products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulkDelete');
+// Google Auth
+Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback']);
+Route::get('/purchases/create', [PurchaseController::class, 'create'])->name('purchases.create');
 
+Route::post('/purchases', [PurchaseController::class, 'store'])->name('purchases.store');
+// OTP Auth
+Route::post('login/otp/send', [OtpAuthController::class, 'sendOtp'])->name('login.otp.send');
+Route::get('login/otp/verify', [OtpAuthController::class, 'showVerifyForm'])->name('login.otp.verify');
+Route::post('login/otp/verify', [OtpAuthController::class, 'verifyOtp']);
 
 Route::get('/products/livewire', ProductList::class)->name('products.livewire');
 Route::get('/api/products', [CheckoutController::class, 'getProducts'])->name('api.products');
@@ -50,6 +63,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/daily/export-pdf', [DailyRecordController::class, 'exportPdf'])->name('daily.export.pdf');
     // Report route(s)
     Route::get('/expenses/report', [ExpenseController::class, 'report'])->name('expenses.report');
+    Route::get('/mobile-scanner/{sessionId}', [MobileScannerController::class, 'view'])
+        ->name('scanner.view');
+
+    Route::post('/scanner/send', [MobileScannerController::class, 'sendBarcode'])
+        ->name('scanner.send');
+
+    Route::get('/scanner/fetch', [MobileScannerController::class, 'fetchBarcodes'])
+        ->name('scanner.fetch'); // <--- LOOK HERE, the name is 'scanner.fetch'
 });
 
 Route::get('/products/sync', function () {
@@ -195,7 +216,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/orders/{id}/receipt', [CheckoutController::class, 'showReceipt'])->name('orders.receipt');
     Route::post('/clear-cart', [CheckoutController::class, 'clearCart'])->name('cart.clear');
     Route::get('/store_inventories/create', [StoreInventoryController::class, 'create'])->name('store_inventories.create');
-    Route::get('/pos', [CartController::class, 'index'])->name('pos.index');
+    Route::get('/pos', [PosController::class, 'index'])->name('pos.index')->middleware('auth');
     Route::post('/cart/clear', [CartController::class, 'clearCart'])->name('cart.clear');
     Route::get('store_inventories/{store_id}', [StoreInventoryController::class, 'show'])->name('store_inventories.show');
     Route::resource('stores', StoreController::class);

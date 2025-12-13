@@ -9,19 +9,18 @@ return new class extends Migration {
      * Run the migrations.
      */
     public function up()
-    {
-        Schema::table('product_variants', function (Blueprint $table) {
-            $table->index('product_id');
-        });
-    }
+{
+    Schema::table('store_inventories', function (Blueprint $table) {
+        $table->index('product_id'); 
+        // Or better, a composite index if you often query by store too:
+        // $table->index(['product_id', 'store_id']);
+    });
+}
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('product_variants', function (Blueprint $table) {
-            //
-        });
-    }
+public function down()
+{
+    Schema::table('store_inventories', function (Blueprint $table) {
+        $table->dropIndex(['product_id']);
+    });
+}
 };
