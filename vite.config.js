@@ -8,7 +8,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css', 
-                'resources/js/app.tsx' // <--- IS THIS main.tsx OR app.tsx?
+                'resources/js/main.jsx' // <--- IS THIS main.tsx OR app.tsx?
             ],
             refresh: true,
         }),
