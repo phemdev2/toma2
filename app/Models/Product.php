@@ -13,6 +13,7 @@ class Product extends Model
     protected $fillable = [
         'name', 
         'barcode', 
+        'quantity_in_pack', 
         'cost', 
         'sale', 
         'description', 
@@ -63,5 +64,9 @@ public function items()
         return $this->storeInventories()
             ->latest('updated_at')
             ->first();
+    }
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }

@@ -3,92 +3,114 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\StoreInventory;
-use App\Models\ProductVariant;
-use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
+// Models
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\StoreInventory;
+use App\Models\Product;
+use App\Models\Variant; // Fixed: Matches your file structure
+use App\Models\Store;
+use App\Models\User;
+
+// Mailables
+use App\Mail\PosOrderReceipt; 
+
 class CheckoutController extends Controller
 {
+    /**
+     * Main Entry Point (Matched to Route)
+     */
     public function processCheckout(Request $request)
     {
-        // 1. Validation including offline context fields
+        // 1. Validation
         $validated = $request->validate([
             'cart' => 'required|array|min:1',
             'paymentMethod' => 'required|string|in:cash,pos,bank',
-            'store_id' => 'required|integer',
+            'store_id' => 'required|integer|exists:stores,id',
             'discount' => 'nullable|numeric',
             'total' => 'required|numeric',
-            // Context fields from JS
+            // Context fields from JS (Offline Syncing)
             'offline_user_id' => 'nullable|integer', 
-            'offline_created_at' => 'nullable|date',
+            'offline_created_at' => 'nullable',
         ]);
 
-        $allowOverselling = Setting::where('key', 'allow_overselling')->value('value') === 'true';
+        // Default setting (Use config or env if Setting model missing)
+        $allowOverselling = env('POS_ALLOW_OVERSELLING', true); 
 
         try {
-            // Check DB connection
+            // Check DB connection before trying transaction
             DB::connection()->getPdo(); 
             
             return $this->handleOnlineCheckout($validated, $allowOverselling);
 
         } catch (\PDOException $e) {
-            // Fallback to Offline Mode
+            // Database is down -> Fallback to Offline Mode
+            Log::warning("DB Connection failed, saving offline: " . $e->getMessage());
             $this->saveOfflineOrder($validated);
             
             return response()->json([
+                'success' => true,
                 'message' => 'System offline. Order saved locally.',
-                'order_id' => null
+                'order_id' => 'OFFLINE-' . time(),
+                'offline_mode' => true
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
+            Log::error("Checkout Critical Error: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
 
+    /**
+     * Handle the Standard Online Checkout
+     */
     private function handleOnlineCheckout($data, $allowOverselling)
     {
         return DB::transaction(function () use ($data, $allowOverselling) {
             
             // 1. Context Logic: Use offline data if available, else current session
             $userId = !empty($data['offline_user_id']) ? $data['offline_user_id'] : auth()->id();
-            $orderDate = !empty($data['offline_created_at']) ? Carbon::parse($data['offline_created_at']) : now();
+            $orderDate = !empty($data['offline_created_at']) 
+                ? Carbon::parse($data['offline_created_at']) 
+                : now();
 
+            // 2. Create Order Header
             $order = Order::create([
-                'payment_method' => $data['paymentMethod'],
-                'order_date' => $orderDate,
-                'created_at' => $orderDate, // Explicitly set created_at for reporting
+                'order_number' => 'ORD-' . strtoupper(Str::random(8)) . '-' . time(),
                 'store_id' => $data['store_id'],
                 'user_id' => $userId, 
-                'discount' => $data['discount'] ?? 0,
-                'amount' => 0 
+                'payment_method' => $data['paymentMethod'],
+                'total_amount' => $data['total'], // Matches DB Schema
+                'subtotal' => $data['total'], // Placeholder, updated below if needed
+                'discount_amount' => $data['discount'] ?? 0,
+                'status' => 'completed',
+                'created_at' => $orderDate,
+                'updated_at' => $orderDate,
             ]);
 
             $calculatedTotal = 0;
             $affectedProductIds = [];
 
+            // 3. Process Items
             foreach ($data['cart'] as $item) {
-                $calculatedTotal += $this->processCartItem($item, $order, $data['store_id'], $allowOverselling, $userId);
+                $itemTotal = $this->processCartItem($item, $order, $data['store_id'], $allowOverselling, $userId, $orderDate);
+                $calculatedTotal += $itemTotal;
                 
-                // Track standard products to refresh stock
+                // Track standard products to refresh stock for frontend
                 if (!empty($item['product_id'])) {
                     $affectedProductIds[] = $item['product_id'];
                 }
             }
             
-            $order->update(['amount' => $calculatedTotal - ($data['discount'] ?? 0)]);
+            // Optional: Recalculate total to ensure backend accuracy
+            // $order->update(['subtotal' => $calculatedTotal]);
 
-            // Clear session if online
-            if(empty($data['offline_created_at'])) {
-                session()->forget('cart');
-            }
-
-            // 2. Real-time Stock Calculation
+            // 4. Real-time Stock Calculation for Frontend
             $updatedStock = [];
             if (!empty($affectedProductIds)) {
                 $inventory = StoreInventory::where('store_id', $data['store_id'])
@@ -100,77 +122,120 @@ class CheckoutController extends Controller
                 foreach($inventory as $inv) {
                     $updatedStock[] = [
                         'id' => $inv->product_id,
-                        'new_stock' => (int)$inv->total_qty
+                        'qty' => (int)$inv->total_qty // Frontend expects 'qty' or 'new_stock'
                     ];
                 }
             }
 
+            // 5. Send Email Receipt (Queued)
+            try {
+                $store = Store::find($data['store_id']);
+                $user = User::find($userId);
+                $recipient = $store->email ?? $user->email ?? null;
+
+                if ($recipient && class_exists(PosOrderReceipt::class)) {
+                    Mail::to($recipient)->later(now()->addSeconds(5), new PosOrderReceipt($order, $store));
+                }
+            } catch (\Exception $e) {
+                Log::error("POS Email Error Order #{$order->id}: " . $e->getMessage());
+                // Don't fail the transaction just because email failed
+            }
+
             return response()->json([
+                'success' => true,
                 'message' => 'Checkout successful',
                 'order_id' => $order->id,
-                'updated_stock' => $updatedStock // Send back to Frontend
+                'updated_stock' => $updatedStock 
             ], 200);
         });
     }
 
-    private function processCartItem($item, $order, $storeId, $allowOverselling, $userId)
+    /**
+     * Process Individual Cart Items (Stock Deduction)
+     */
+    private function processCartItem($item, $order, $storeId, $allowOverselling, $userId, $date)
     {
-        // Custom Item Handling
+        // A. Custom Item Handling (Misc)
         if (empty($item['product_id'])) {
             OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => null,
-                'custom_name' => $item['custom_name'] ?? 'Custom Item',
+                'product_name' => $item['custom_name'] ?? 'Custom Item',
                 'variant_id' => null,
                 'quantity' => $item['quantity'],
                 'price' => $item['price'],
-                'user_id' => $userId,
-                'shop_id' => $storeId,
+                'total' => $item['quantity'] * $item['price'],
+                'created_at' => $date,
+                'updated_at' => $date,
             ]);
             return $item['price'] * $item['quantity'];
         }
 
-        // Standard Product Handling
-        $variant = isset($item['variant_id']) ? ProductVariant::find($item['variant_id']) : null;
-        $productId = $variant ? $variant->product_id : $item['product_id'];
-        $unitQty = $variant ? $variant->unit_qty : 1;
-        $qtyRequired = $item['quantity'] * $unitQty;
+        // B. Standard Product Handling
+        $product = Product::find($item['product_id']);
+        if(!$product) return 0;
 
-        // Lock for update
+        $multiplier = 1;
+        $variantName = null;
+        $unitCost = ($product->quantity_in_pack > 0) ? ($product->cost / $product->quantity_in_pack) : $product->cost;
+
+        // Check for Variant
+        if (!empty($item['variant_id'])) {
+            $variant = Variant::find($item['variant_id']);
+            if ($variant) {
+                $multiplier = $variant->unit_qty ?? 1;
+                $variantName = $variant->unit_type ?? $variant->variant_name;
+            }
+        }
+
+        $qtyRequired = $item['quantity'] * $multiplier;
+        $totalCost = $unitCost * $qtyRequired;
+
+        // Lock Inventory Row for Safety
         $inventory = StoreInventory::where('store_id', $storeId)
-                                   ->where('product_id', $productId)
+                                   ->where('product_id', $product->id)
                                    ->lockForUpdate()
                                    ->first();
 
+        // Stock Deduction Logic
         if ($inventory) {
             if (!$allowOverselling && $inventory->quantity < $qtyRequired) {
-                throw new \Exception("Insufficient stock for Product ID: $productId");
+                throw new \Exception("Insufficient stock for: " . $product->name);
             }
             $inventory->decrement('quantity', $qtyRequired);
         } else {
+            // Create negative stock record if allowed
             if (!$allowOverselling) {
-                throw new \Exception("Stock record missing for Product ID: $productId");
+                throw new \Exception("No stock record for: " . $product->name);
             }
             StoreInventory::create([
                 'store_id' => $storeId, 
-                'product_id' => $productId, 
+                'product_id' => $product->id, 
                 'quantity' => -$qtyRequired
             ]);
         }
 
+        // Create Order Item
         OrderItem::create([
             'order_id' => $order->id,
-            'product_id' => $productId,
-            'variant_id' => $variant ? $variant->id : null,
+            'product_id' => $product->id,
+            'variant_id' => $item['variant_id'] ?? null,
+            'product_name' => $product->name,
+            'variant_name' => $variantName,
             'quantity' => $item['quantity'],
             'price' => $item['price'],
-            'user_id' => $userId,
-            'shop_id' => $storeId,
+            'total' => $item['quantity'] * $item['price'],
+            'cost' => $totalCost, // Track cost for profit reports
+            'created_at' => $date,
+            'updated_at' => $date,
         ]);
 
         return $item['price'] * $item['quantity'];
     }
 
+    /**
+     * Fallback: Save to JSON file if DB is down
+     */
     private function saveOfflineOrder($data)
     {
         $file = storage_path('app/offline_orders.json');
@@ -181,6 +246,7 @@ class CheckoutController extends Controller
             'saved_at' => now()->toIso8601String(),
         ];
 
+        // Safe File Write with Locking
         $fp = fopen($file, 'c+');
         if (flock($fp, LOCK_EX)) {
             $currentData = '';
@@ -191,48 +257,6 @@ class CheckoutController extends Controller
             rewind($fp);
             fwrite($fp, json_encode($orders, JSON_PRETTY_PRINT));
             flock($fp, LOCK_UN);
-        }
-        fclose($fp);
-    }
-
-    public function syncOfflineOrders()
-    {
-        try { DB::connection()->getPdo(); } catch (\Exception $e) { return response()->json(['message' => 'Offline'], 503); }
-
-        $file = storage_path('app/offline_orders.json');
-        if (!file_exists($file)) return response()->json(['message' => 'No orders']);
-
-        $fp = fopen($file, 'c+');
-        if (flock($fp, LOCK_EX)) {
-            $content = '';
-            while (!feof($fp)) $content .= fread($fp, 8192);
-            $offlineOrders = json_decode($content, true) ?? [];
-            
-            if (empty($offlineOrders)) {
-                flock($fp, LOCK_UN); fclose($fp); return response()->json(['message' => 'Empty']);
-            }
-
-            $failedOrders = [];
-            $syncedCount = 0;
-            $allowOverselling = Setting::where('key', 'allow_overselling')->value('value') === 'true';
-
-            foreach ($offlineOrders as $orderWrapper) {
-                try {
-                    // Sync using stored data (retaining context)
-                    $this->handleOnlineCheckout($orderWrapper['data'], $allowOverselling);
-                    $syncedCount++;
-                } catch (\Exception $e) {
-                    $failedOrders[] = $orderWrapper;
-                }
-            }
-
-            ftruncate($fp, 0);
-            rewind($fp);
-            fwrite($fp, json_encode($failedOrders, JSON_PRETTY_PRINT));
-            flock($fp, LOCK_UN);
-            fclose($fp);
-
-            return response()->json(['message' => "Synced $syncedCount", 'failed' => count($failedOrders)]);
         }
         fclose($fp);
     }

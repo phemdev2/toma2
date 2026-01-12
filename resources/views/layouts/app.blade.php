@@ -10,6 +10,10 @@
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PeerJS (Required for Voice Calling) -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -79,6 +83,12 @@
             </a>
             @endcan
 
+            <!-- ================= NEW CHAT LINK ================= -->
+            <a href="{{ route('chat.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('chat*') ? 'bg-red-600' : '' }}">
+                <i class="fas fa-comments w-6 text-center"></i> <span class="ml-2">Chat</span>
+            </a>
+            <!-- ================================================= -->
+
             <a href="{{ route('daily.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('daily') ? 'bg-red-600' : '' }}">
                 <i class="fas fa-calendar-day w-6 text-center"></i> <span class="ml-2">Daily Records</span>
             </a>
@@ -89,10 +99,153 @@
 
             <!-- Subscription Logic -->
             @if(isset($isSubscriptionExpired) && !$isSubscriptionExpired)
-                <a href="{{ route('pos.index', ['user_id' => Auth::id(), 'store_id' => Auth::user()->store_id ?? 0]) }}" target="_blank" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('pos') ? 'bg-red-600' : '' }}">
-                    <i class="fas fa-cash-register w-6 text-center"></i> <span class="ml-2">POS</span>
-                </a>
                 
+                <!-- POS Link with Security Verification -->
+<div x-data="{ 
+    posModalOpen: false, 
+    securityCode: '', 
+    userInput: '', 
+    error: false,
+    
+    // Generate a random number between 100 and 999
+    generateCode() {
+        this.securityCode = Math.floor(Math.random() * 900) + 100;
+        this.userInput = '';
+        this.error = false;
+    },
+    
+    // Watch for modal opening to regenerate code
+    init() {
+        this.$watch('posModalOpen', value => {
+            if (value) this.generateCode();
+        });
+    },
+
+    // Validate before submitting
+    submitForm(e) {
+        if (this.userInput != this.securityCode) {
+            this.error = true;
+            // Shake animation logic could go here
+        } else {
+            // Submit the actual HTML form
+            this.$refs.posForm.submit();
+        }
+    }
+}" x-init="init()">
+
+    <!-- Trigger Button -->
+    <button @click="posModalOpen = true" 
+            class="w-full flex items-center p-3 rounded transition duration-200 hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('pos') ? 'bg-red-600 shadow-md' : '' }}">
+        <i class="fas fa-cash-register w-6 text-center text-lg"></i> 
+        <span class="ml-2 font-medium tracking-wide">POS</span>
+    </button>
+
+    <!-- Modal Portal -->
+    <template x-teleport="body">
+        <div x-show="posModalOpen" 
+             class="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+             x-cloak>
+            
+            <!-- Backdrop -->
+            <div x-show="posModalOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="posModalOpen = false"
+                 class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+            </div>
+
+            <!-- Modal Panel -->
+            <div x-show="posModalOpen"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 scale-95 translate-y-4"
+                 class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-0 relative z-10 border border-gray-200 dark:border-gray-700 overflow-hidden">
+                
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-center relative">
+                    <button @click="posModalOpen = false" class="absolute top-4 right-4 text-white/70 hover:text-white transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                    <div class="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md shadow-inner">
+                        <i class="fas fa-shield-alt text-3xl text-white"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white tracking-tight">Security Check</h3>
+                    <p class="text-purple-100 text-sm mt-1">Verify your station before resuming</p>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-8">
+                    <form action="{{ route('pos.enter') }}" method="POST" x-ref="posForm" @submit.prevent="submitForm">
+                        @csrf
+                        
+                        <!-- Store Selection -->
+                        <div class="mb-5 relative">
+                            <label class="block text-gray-700 dark:text-gray-300 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                                Store Location
+                            </label>
+                            <div class="relative">
+                                <i class="fas fa-map-marker-alt absolute left-4 top-3.5 text-gray-400 dark:text-gray-500"></i>
+                                <select name="store_id" 
+                                        class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all appearance-none font-medium cursor-pointer shadow-sm">
+                                    @foreach(Auth::user()->stores ?? App\Models\Store::all() as $store)
+                                        <option value="{{ $store->id }}" {{ Auth::user()->store_id == $store->id ? 'selected' : '' }}>
+                                            {{ $store->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                    <i class="fas fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Random Code Verification -->
+                        <div class="mb-6">
+                            <label class="block text-gray-700 dark:text-gray-300 text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+                                Enter Code: <span x-text="securityCode" class="text-lg font-mono text-purple-600 dark:text-purple-400 font-black tracking-widest ml-2 select-none"></span>
+                            </label>
+                            <div class="relative">
+                                <i class="fas fa-key absolute left-4 top-3.5 text-gray-400 dark:text-gray-500"></i>
+                                <input type="number" 
+                                       x-model="userInput" 
+                                       placeholder="Type the 3-digit code above"
+                                       class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all font-medium shadow-inner"
+                                       :class="error ? 'border-red-500 ring-1 ring-red-500' : ''"
+                                >
+                            </div>
+                            <!-- Error Message -->
+                            <p x-show="error" x-transition class="text-red-500 text-xs mt-2 ml-1 font-bold flex items-center">
+                                <i class="fas fa-exclamation-circle mr-1"></i> Incorrect code. Please look closely.
+                            </p>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="flex items-center gap-3 mt-8">
+                            <button type="button" @click="posModalOpen = false" 
+                                    class="w-1/3 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                Cancel
+                            </button>
+                            <!-- Button Type is submit to trigger the @submit.prevent on the form -->
+                            <button type="submit" 
+                                    class="w-2/3 py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold shadow-lg hover:shadow-purple-500/30 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
+                                    :class="userInput.length < 3 ? 'opacity-70 cursor-not-allowed' : ''">
+                                <span>Verify & Enter</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
                  <a href="{{ route('purchases.index') }}" class="flex items-center p-3 rounded transition hover:bg-purple-700 dark:hover:bg-gray-700 {{ request()->is('purchases') ? 'bg-red-600' : '' }}">
                     <i class="fas fa-truck-loading w-6 text-center"></i> <span class="ml-2">Purchases</span>
                 </a>

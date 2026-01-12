@@ -30,7 +30,21 @@ use App\Http\Controllers\{
     DailyExpenseController,
     OtpAuthController,
     GoogleAuthController,
+ChatController,
 };
+Route::post('/pos/enter', [PosController::class, 'enterPos'])->name('pos.enter');
+Route::middleware(['auth', 'web'])->group(function () {
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    
+    // Fetch messages (dynamic type: 'user' or 'group')
+    Route::get('/chat/messages/{type}/{id}', [ChatController::class, 'fetchMessages']);
+    
+    Route::post('/chat/send', [ChatController::class, 'sendMessage']);
+    Route::post('/chat/create-group', [ChatController::class, 'createGroup'])->name('chat.createGroup');
+    Route::put('/chat/message/{id}', [ChatController::class, 'updateMessage']);
+Route::delete('/chat/message/{id}', [ChatController::class, 'deleteMessage']);
+Route::delete('/chat/group/{id}', [ChatController::class, 'deleteGroup'])->name('chat.deleteGroup');
+});
 Route::delete('/products/bulk-delete', [ProductController::class, 'bulkDelete'])->name('products.bulkDelete');
 // Google Auth
 Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
@@ -71,8 +85,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/scanner/fetch', [MobileScannerController::class, 'fetchBarcodes'])
         ->name('scanner.fetch'); // <--- LOOK HERE, the name is 'scanner.fetch'
+        // Add this new route for real-time POS updates
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+     Route::get('/pos/updates', [PosController::class, 'getUpdates'])->name('pos.updates');
 });
-
+Route::put('/variants/{id}/update-single', [ProductController::class, 'updateSingleVariant'])->name('variants.updateSingle');
 Route::get('/products/sync', function () {
     return Product::with('store_inventories')->get();
 })->name('products.sync');

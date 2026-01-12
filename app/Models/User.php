@@ -162,4 +162,13 @@ public function dailyRecords()
 
     return redirect()->route('subscription.success');
 }
+public function isOnline()
+    {
+        return \Illuminate\Support\Facades\Cache::has('user-is-online-' . $this->id);
+    }
+
+public function groups()
+{
+     return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id');
+}
 }
